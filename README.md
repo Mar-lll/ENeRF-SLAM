@@ -85,16 +85,6 @@ Next, run ENerf-SLAM
 python -W ignore run.py configs/C3VD/trans2b.yaml
 ```
 
-## Evaluation
-
-### Average Trajectory Error
-
-To evaluate the average trajectory error. Run the command below with the corresponding config file:
-
-```bash
-python src/tools/eval_ate.py configs/Replica/room0.yaml
-```
-
 ## Related Repositories
 
 Our codebase is based on [NICE-SLAM](https://github.com/cvg/nice-slam) and [Endo-Depth-and-Motion](https://github.com/UZ-SLAMLab/Endo-Depth-and-Motion). We are grateful to the authors for sharing their codebase with the public. Your significant contributions have been instrumental in making our work a reality!
