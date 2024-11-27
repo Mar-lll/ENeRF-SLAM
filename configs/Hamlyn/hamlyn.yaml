@@ -1,0 +1,36 @@
+dataset: 'Hamlyn'
+meshing:
+  eval_rec: True
+tracking:
+  vis_freq: 300
+  vis_inside_freq: 25
+  ignore_edge_W: 0
+  ignore_edge_H: 0 
+  seperate_LR: False
+  const_speed_assumption: True
+  lr: 0.0005
+  pixels: 5000
+  iters: 50
+mapping:
+  every_frame: 1
+  vis_freq: 100
+  vis_inside_freq: 50
+  mesh_freq: 100
+  ckpt_freq: 100 
+  keyframe_every: 1
+  mapping_window_size: 5 
+  pixels: 5000
+  iters_first: 1500
+  iters: 300
+
+cam:
+  H: 384
+  W: 512
+  fx: 765.823689
+  fy: 765.823689
+  cx: 212.472778
+  cy: 205.675282
+  png_depth_scale: 52.864  #for depth image in png format
+  crop_edge: 0
+
+

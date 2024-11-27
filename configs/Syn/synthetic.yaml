@@ -1,0 +1,34 @@
+dataset: 'syn'
+meshing:
+  eval_rec: True
+tracking:
+  vis_freq: 300
+  vis_inside_freq: 25
+  ignore_edge_W: 0
+  ignore_edge_H: 0 
+  seperate_LR: True
+  const_speed_assumption: True
+  lr: 0.0005
+  pixels: 5000
+  iters: 50
+mapping:
+  every_frame: 1
+  vis_freq: 100
+  vis_inside_freq: 50
+  mesh_freq: 100
+  ckpt_freq: 100 
+  keyframe_every: 1
+  mapping_window_size: 5
+  pixels: 5000
+  iters_first: 1500
+  iters: 300
+
+cam:
+  H: 720
+  W: 960
+  fx: 202.3089591
+  fy: 202.3089591
+  cx: 480
+  cy: 360
+  png_depth_scale: 2 #for depth image in png format
+  crop_edge: 0
