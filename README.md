@@ -4,7 +4,7 @@
 sudo apt-get install libopenexr-dev
     
 conda env create -f environment.yaml
-conda activate nice-slam
+conda activate enerf-slam
 ```
 
 ## Run
