@@ -11,7 +11,7 @@ tracking:
   const_speed_assumption: True
   lr: 0.0005
   pixels: 5000
-  iters: 50
+  iters: 25
 mapping:
   every_frame: 1
   vis_freq: 100
