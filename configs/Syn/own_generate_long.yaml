@@ -1,0 +1,8 @@
+inherit_from: configs/Syn/synthetic.yaml 
+
+mapping:
+  bound: [[-4.7,3.6],[-11.6,4.0],[0,17.0]]
+  marching_cubes_bound: [[-4.7,3.6],[-11.6,4.0],[0,17.0]]
+data:
+  input_folder: Datasets/own_generate_long2 
+  output: output_imap/own_generate_long2_release

@@ -31,7 +31,7 @@ tracking:
   ignore_edge_W: 0
   ignore_edge_H: 0
   use_color_in_tracking: True
-  device: "cuda:0"
+  device: "cuda:3"
   handle_dynamic: False
   vis_freq: 50
   vis_inside_freq: 25
@@ -41,10 +41,11 @@ tracking:
   no_vis_on_first_frame: True
   gt_camera: False   
   lr: 0.001
+  #lr: 0
   pixels: 5000
   iters: 50
 mapping:
-  device: "cuda:0"
+  device: "cuda:2"
   color_refine: True
   middle_iter_ratio: 0.4
   fine_iter_ratio: 0.6
@@ -69,7 +70,9 @@ mapping:
   lr_first_factor: 5
   lr_factor: 1  
   pixels: 2560
+  #iters_first: 1500
   iters_first: 300
+  #iters: 300
   iters: 100
   anneal_end: 50000
   warm_up_end: 5000

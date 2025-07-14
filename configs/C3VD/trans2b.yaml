@@ -2,9 +2,12 @@ inherit_from: configs/C3VD/c3vd.yaml
 mapping:
   bound: [[-0.1,9.4],[-0.1,22.1],[-7.4,0.1]]
   marching_cubes_bound: [[-0.1,9.4],[-0.1,22.1],[-7.4,0.1]]
+  keyframe_every: 1
+  every_frame: 1
+
 tracking:  
   iters: 100
 data:
   input_folder: Datasets/trans_t2_b
-  output: output/trans_t2_b
+  output: output_imap/trans_t2_b
   

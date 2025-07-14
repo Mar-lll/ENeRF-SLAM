@@ -8,13 +8,13 @@ tracking:
   ignore_edge_W: 0
   ignore_edge_H: 0 
   seperate_LR: False
-  const_speed_assumption: True
-  lr: 0.0005
+  const_speed_assumption: False
+  lr: 0.0001
   pixels: 5000
-  iters: 25
+  iters: 50
 mapping:
   every_frame: 1
-  vis_freq: 100
+  vis_freq: 10
   vis_inside_freq: 99 
   mesh_freq: 100
   ckpt_freq: 100 

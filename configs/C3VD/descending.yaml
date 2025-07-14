@@ -1,7 +1,8 @@
 inherit_from: configs/C3VD/c3vd.yaml
+timesteps:  214
 mapping:
   bound: [[3.7,8.3],[-0.1,23.9],[-14.3,-2.5]]
   marching_cubes_bound: [[3.7,8.3],[-0.1,23.9],[-14.3,-2.5]]
 data:
   input_folder: Datasets/desc_t4_a 
-  output: output/desc_t4_a
+  output: output_imap/desc_t4_a

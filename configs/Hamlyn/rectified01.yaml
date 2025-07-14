@@ -5,4 +5,4 @@ mapping:
   marching_cubes_bound: [[-2.5,1.3],[-1.3,1.3],[-4,0.01]]
 data: 
   input_folder: Datasets/hamlyn
-  output: output/hamlyn
+  output: output_imap/hamlyn_release
