@@ -68,6 +68,7 @@ class Renderer(object):
                 mask = mask_x & mask_y & mask_z
 
                 pi = pi.unsqueeze(0)
+
                 ret = decoders(pi, c_grid=None)
                 ret = ret.squeeze(0)
                 if len(ret.shape) == 1 and ret.shape[0] == 4:
@@ -117,20 +118,16 @@ class Renderer(object):
         with torch.no_grad():
             det_rays_o = rays_o.clone().detach().unsqueeze(-1)  # (N, 3, 1)
             det_rays_d = rays_d.clone().detach().unsqueeze(-1)  # (N, 3, 1)
-            #print(det_rays_d.mean())
             t = (self.bound.unsqueeze(0).to(device) -
                  det_rays_o)/det_rays_d  # (N, 3, 2)
-            #print(t.mean())
             far_bb, _ = torch.min(torch.max(t, dim=2)[0], dim=1)
             far_bb = far_bb.unsqueeze(-1)
             far_bb += 0.01
-
         if gt_depth is not None:
             # in case the bound is too large
             far = torch.clamp(far_bb, 0,  torch.max(gt_depth*1.2))
         else:
             far = far_bb
-        #print("far",far.mean())
         if N_surface > 0:
             if False:
                 # this naive implementation downgrades performance
@@ -278,7 +275,7 @@ class Renderer(object):
                 else:
                     gt_depth_batch = gt_depth[i:i+ray_batch_size]
                     ret = self.render_batch_ray(
-                        c, decoders, rays_d_batch, rays_o_batch,viewdirs_batch, device, stage, gt_depth=None)
+                        c, decoders, rays_d_batch, rays_o_batch,viewdirs_batch, device, stage, gt_depth=gt_depth_batch)
 
                 depth, uncertainty, color = ret
                 depth_list.append(depth.double())

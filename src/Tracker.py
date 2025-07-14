@@ -103,18 +103,6 @@ class Tracker(object):
         Hedge = self.ignore_edge_H
         batch_rays_o, batch_rays_d, batch_gt_depth, batch_gt_color = get_samples(
             Hedge, H-Hedge, Wedge, W-Wedge, batch_size, H, W, fx, fy, cx, cy, c2w, gt_depth, gt_color, self.device)
-
-        # should pre-filter those out of bounding box depth value
-        with torch.no_grad():
-            det_rays_o = batch_rays_o.clone().detach().unsqueeze(-1)  # (N, 3, 1)
-            det_rays_d = batch_rays_d.clone().detach().unsqueeze(-1)  # (N, 3, 1)
-            t = (self.bound.unsqueeze(0).to(device)-det_rays_o)/det_rays_d
-            t, _ = torch.min(torch.max(t, dim=2)[0], dim=1)
-            inside_mask = t >= batch_gt_depth
-        batch_rays_d = batch_rays_d[inside_mask]
-        batch_rays_o = batch_rays_o[inside_mask]
-        batch_gt_depth = batch_gt_depth[inside_mask]
-        batch_gt_color = batch_gt_color[inside_mask]
         
         viewdirs = batch_rays_d
         viewdirs = viewdirs / torch.norm(viewdirs, dim=-1, keepdim=True)
@@ -134,7 +122,6 @@ class Tracker(object):
 
         loss = (torch.abs(batch_gt_depth-depth) /
                 torch.sqrt(uncertainty+1e-10))[mask].sum()
-        #loss += pc_loss
         if self.use_color_in_tracking:
             color_loss = torch.abs(
                 batch_gt_color - color)[mask].sum()
@@ -178,7 +165,7 @@ class Tracker(object):
             ) 
         k_depth = np.array([[self.fx,0,self.cx],[0,self.fy,self.cy],[0,0,1]])
         k_depth = kornia.utils.image_to_tensor(k_depth, keepdim=False).squeeze(1)  # Bx3x3
-        c2w =  self.cor_convert(c2w)
+        c2w =  self.cor_convert(c2w.cpu().numpy())
         new_frame_ = create_frame(
                         c_pose_w=np.linalg.inv(c2w),
                         c_pose_w_gt=None,
@@ -208,12 +195,12 @@ class Tracker(object):
         k_depth = kornia.utils.image_to_tensor(k_depth, keepdim=False).squeeze(1)  # Bx3x3
         cur_c2w = self.cor_convert(cur_c2w)
         new_frame = create_frame(
-            c_pose_w=np.linalg.inv(cur_c2w),#位姿求逆
+            c_pose_w=np.linalg.inv(cur_c2w),
             c_pose_w_gt=None,
             gray_image=gray,
             rgbimage=None,
             depth=depth_np.cpu().numpy(),
-            k=k_depth.numpy().reshape(3, 3), #内参
+            k=k_depth.numpy().reshape(3, 3),
             idx=frame_id,
             ref_camera=(frame_id == 0),
             scales=2,
@@ -242,7 +229,8 @@ class Tracker(object):
         self.estimate_c2w_list[frame_id] = torch.tensor(estimated_new_cam_c2w).to(self.device).float()
         return new_frame_
 
-    def cor_convert(self,c2w):
+    def cor_convert(self,c2w1):
+        c2w = c2w1.copy()
         init_c2w = self.estimate_c2w_list[0].clone().cpu().numpy()
         c2w[2,3] = -(c2w[2,3] - init_c2w[2,3])+init_c2w[2,3]
         c2w[1,3] = -(c2w[1,3] - init_c2w[1,3])+init_c2w[1,3]
@@ -405,12 +393,14 @@ class Tracker(object):
             nn = np.row_stack((nn,bb))
 
             self.idx[0] = idx
+            """
             if self.low_gpu_mem:
                 with torch.cuda.device('cuda:3'):
                     torch.cuda.empty_cache()
+            """
             if self.idx == self.n_img - 1 or self.idx %10 == 0:
                 np.savetxt(f'{self.output}/mesh/traj.txt',
-                    mm,'%.9e',delimiter=' ',newline = '\n')
+                    mm[1:],'%.9e',delimiter=' ',newline = '\n')
                 np.savetxt(f'{self.output}/mesh/gt.txt',
-                    nn,'%.9e',delimiter=' ',newline = '\n')
+                    nn[1:],'%.9e',delimiter=' ',newline = '\n')
            

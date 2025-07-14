@@ -20,11 +20,12 @@ class Mapper(object):
 
     """
 
-    def __init__(self, cfg, args, slam
+    def __init__(self, cfg, args, slam, coarse_mapper=False
                  ):
 
         self.cfg = cfg
         self.args = args
+        self.coarse_mapper = coarse_mapper
 
         self.idx = slam.idx
         self.c = slam.shared_c
@@ -42,6 +43,7 @@ class Mapper(object):
         self.mapping_first_frame = slam.mapping_first_frame
 
         self.scale = cfg['scale']
+        self.coarse = cfg['coarse']
         self.occupancy = cfg['occupancy']
         self.sync_method = cfg['sync_method']
         self.use_viewdirs = cfg['use_viewdirs']
@@ -73,8 +75,6 @@ class Mapper(object):
         self.save_selected_keyframes_info = cfg['mapping']['save_selected_keyframes_info']
         if self.save_selected_keyframes_info:
             self.selected_keyframes = {}
-
-
         self.keyframe_dict = []
         self.keyframe_list = []
         self.frame_reader = get_dataset(
@@ -291,7 +291,7 @@ class Mapper(object):
         fine_grid_para = []
         color_grid_para = []
         gt_depth_np = cur_gt_depth.cpu().numpy()
-    
+
         decoders_para_list += list(self.decoders.parameters())
 
         if self.BA:
@@ -373,34 +373,19 @@ class Mapper(object):
             if self.use_viewdirs:
                 viewdirs = batch_rays_d
                 viewdirs = viewdirs / torch.norm(viewdirs, dim=-1, keepdim=True)
-
-            # should pre-filter those out of bounding box depth value
-            with torch.no_grad():
-                det_rays_o = batch_rays_o.clone().detach().unsqueeze(-1)  # (N, 3, 1)
-                det_rays_d = batch_rays_d.clone().detach().unsqueeze(-1)  # (N, 3, 1)
-                t = (self.bound.unsqueeze(0).to(
-                    device)-det_rays_o)/det_rays_d
-                t, _ = torch.min(torch.max(t, dim=2)[0], dim=1)
-                inside_mask = t >= batch_gt_depth
-            batch_rays_d = batch_rays_d[inside_mask]
-            batch_rays_o = batch_rays_o[inside_mask]
-            batch_gt_depth = batch_gt_depth[inside_mask]
-            batch_gt_color = batch_gt_color[inside_mask]
-            viewdirs = viewdirs[inside_mask]
+            
             ret = self.renderer.render_batch_ray(c, self.decoders, batch_rays_d,
                                                  batch_rays_o, viewdirs,device, stage = self.stage,
-                                                 gt_depth= batch_gt_depth)
+                                                 gt_depth=batch_gt_depth)
             depth, uncertainty, color = ret 
-            #print(depth.mean())
             depth_mask = (batch_gt_depth > 0)
             loss = torch.abs(
                 batch_gt_depth[depth_mask]-depth[depth_mask]).sum()
-            if (self.stage == 'color'):
-                color_loss = torch.abs(batch_gt_color - color).sum()
-                weighted_color_loss = self.w_color_loss*color_loss
-                loss += weighted_color_loss
 
-            # for imap*, it uses volume density
+            color_loss = torch.abs(batch_gt_color - color).sum()
+            weighted_color_loss = self.w_color_loss*color_loss
+            loss += weighted_color_loss
+
             regulation = (not self.occupancy)
             if regulation:
                 point_sigma = self.renderer.regulation(
@@ -460,7 +445,8 @@ class Mapper(object):
 
             if self.verbose:
                 print(Fore.GREEN)
-                print("Mapping Frame ", idx.item())
+                prefix = 'Coarse ' if self.coarse_mapper else ''
+                print(prefix+"Mapping Frame ", idx.item())
                 print(Style.RESET_ALL)
 
             _, gt_color, gt_depth, gt_c2w = self.frame_reader[idx]
@@ -470,7 +456,7 @@ class Mapper(object):
                 num_joint_iters = cfg['mapping']['iters']
 
                 # here provides a color refinement postprocess
-                if idx == self.n_img-1 and self.color_refine:
+                if idx == self.n_img-1 and self.color_refine and not self.coarse_mapper:
                     outer_joint_iters = 5
                     self.mapping_window_size *= 1
                     self.middle_iter_ratio = 0.0
@@ -492,7 +478,8 @@ class Mapper(object):
             tic = timer()
             for outer_joint_iter in range(outer_joint_iters):
 
-                self.BA = (len(self.keyframe_list) > 4) and cfg['mapping']['BA']
+                self.BA = (len(self.keyframe_list) > 4) and cfg['mapping']['BA'] and (
+                    not self.coarse_mapper)
 
                 _ = self.optimize_map(num_joint_iters, lr_factor, idx, gt_color, gt_depth,
                                       gt_c2w, self.keyframe_dict, self.keyframe_list, cur_c2w=cur_c2w)

@@ -247,24 +247,6 @@ class BaseDataset(Dataset):
 
         return index, color_data.to(self.device), depth_data.to(self.device), pose.to(self.device)
 
-class Endomapper(BaseDataset):
-    def __init__(self, cfg, args, scale, device='cuda:0'
-                 ):
-        super(Endomapper, self).__init__(cfg, args, scale, device)
-        self.color_paths = sorted(
-            glob.glob(os.path.join(self.input_folder, 'color', '*.png')))
-        self.depth_paths = sorted(
-            glob.glob(os.path.join(self.input_folder, 'depth', '*.exr')))
-        self.n_img = len(self.color_paths)
-        self.load_poses(os.path.join(
-            self.input_folder, 'traj1.txt'))
-
-    def load_poses(self, path):
-        self.poses = []
-        for i in range(self.n_img):
-            c2w = np.eye(4)
-            c2w = torch.from_numpy(c2w).float()
-            self.poses.append(c2w)
 
 class SYN(BaseDataset):
     def __init__(self, cfg, args, scale, device='cuda:0'
@@ -290,12 +272,14 @@ class SYN(BaseDataset):
                 c2w = np.array(list(map(float, line.split()))).reshape(4, 4)
                 c2w[:3, 1] *= -1
                 c2w[:3, 2] *= -1
+
                 c2w[1,3] *= -1
                 c2w[0,1] *= -1
                 c2w[1,0] *= -1
                 c2w[1,2] *= -1
                 c2w[2,1] *= -1
 
+                #c2w[3,1] *= -1
                 c2w[:3,3] /= 10
                 c2w = torch.from_numpy(c2w).float()
                 self.poses.append(c2w)
@@ -305,6 +289,43 @@ class SYN(BaseDataset):
                 c2w = np.eye(4)
                 c2w = torch.from_numpy(c2w).float()
                 self.poses.append(c2w)
+
+class Scared_EST(BaseDataset):
+    def __init__(self, cfg, args, scale, device='cuda:0'
+                 ):
+        super(Scared_EST, self).__init__(cfg, args, scale, device)
+        self.color_paths = sorted(
+            glob.glob(f'{self.input_folder}/results/frame*.png'))
+        self.depth_paths = sorted(
+            glob.glob(f'{self.input_folder}/results/depth*.npy'))
+        self.n_img = len(self.color_paths)
+        self.load_poses(f'{self.input_folder}/traj.txt')
+
+    def load_poses(self, path):
+        self.poses = [] 
+        
+        if os.path.exists(path):
+            with open(path, "r") as f:
+                lines = f.readlines()
+            for i in range(self.n_img):
+                line = lines[i]
+
+                c2w = np.array(list(map(float, line.split()))).reshape(4, 4)
+                c2w[:3,2]*=-1
+                c2w[:3,3]*=-1
+
+                c2w[:3,2] *= -1
+                c2w[0,3]*=-1
+                c2w[1,3]*=-1
+                c2w[:3,3]/=34.133333
+                c2w = torch.from_numpy(c2w).float()
+                self.poses.append(c2w)
+        else:
+            for i in range(self.n_img):
+                c2w = np.eye(4)
+                c2w = torch.from_numpy(c2w).float()
+                self.poses.append(c2w)
+
 
 class Hamlyn(BaseDataset):
     def __init__(self, cfg, args, scale, device='cuda:0'
@@ -351,27 +372,29 @@ class C3VD(BaseDataset):
             glob.glob(f'{self.input_folder}/color_undistorted/*.png'))
         self.depth_paths = sorted(
             glob.glob(f'{self.input_folder}/depth_undistorted/*_depth.tiff'))
+        #self.color_paths = []
+        #for i in range(len(self.depth_paths)):
+        #    self.color_paths.append(self.input_folder+'/color_undistorted/'+str(i)+'_color.png')      
         self.n_img = len(self.color_paths)
         self.load_poses(f'{self.input_folder}/pose.txt')
 
     def load_poses(self, path):
         self.poses = [] 
-   
         if os.path.exists(path):
             with open(path, "r") as f:
                 lines = f.readlines()
             for i in range(self.n_img):
                 line = lines[i]
-
                 c2w = np.array(list(map(float, line.split(',')))).reshape(4, 4).T 
                 c2w[:3, 1] *= -1
                 c2w[:3, 2] *= -1
                 c2w[:3,3] /= 10
                 c2w = torch.from_numpy(c2w).float()
                 self.poses.append(c2w)
-
+        
 dataset_dict = {
     "Hamlyn": Hamlyn,
+    'SCARED_EST': Scared_EST,
     "syn": SYN,
     "c3vd": C3VD,
 } 

@@ -17,7 +17,6 @@ class Mesher(object):
         Args:
             cfg (dict): parsed config dict.
             args (class 'argparse.Namespace'): argparse arguments.
-            slam (class NICE-SLAM): NICE-SLAM main class.
             points_batch_size (int): maximum points size for query in one batch. 
                                      Used to alleviate GPU memeory usage. Defaults to 500000.
             ray_batch_size (int): maximum ray size for query in one batch. 
@@ -309,6 +308,7 @@ class Mesher(object):
                 mask = mask_x & mask_y & mask_z
 
                 pi = pi.unsqueeze(0)
+
                 ret = decoders(pi,viewdir, c_grid=None)
                 ret = ret.squeeze(0)
                 if len(ret.shape) == 1 and ret.shape[0] == 4:
@@ -325,6 +325,7 @@ class Mesher(object):
                 mask = mask_x & mask_y & mask_z
 
                 pi = pi.unsqueeze(0)
+
                 ret = decoders(pi,viewdir=None, c_grid=None)
                 ret = ret.squeeze(0)
                 if len(ret.shape) == 1 and ret.shape[0] == 4:
@@ -449,8 +450,6 @@ class Mesher(object):
                 z = []
                 for i, pnts in enumerate(torch.split(points, self.points_batch_size, dim=0)):
                     viewdirs = pnts / torch.norm(pnts, dim=-1, keepdim=True)
-                    #rays_o = c2w[:3,-1].expand(rays_d.shape)
-                    #物体不同位置的密度应该和观察角度无关
                     z.append(self.eval_points(pnts,viewdirs, decoders, c, 'fine',
                                               device).cpu().numpy()[:, -1])
 
@@ -458,7 +457,6 @@ class Mesher(object):
                 z[~mask] = 100
 
             z = z.astype(np.float32)
-            print("z的值:",z.min()) 
             try:
                 if version.parse(
                         skimage.__version__) > version.parse('0.15.0'):
@@ -466,8 +464,6 @@ class Mesher(object):
                     volume=z.reshape(
                             grid['xyz'][1].shape[0], grid['xyz'][0].shape[0],
                             grid['xyz'][2].shape[0]).transpose([1, 0, 2])
-                    #print("min:",volume.min())
-                    #print("max:",volume.max())
                     verts, faces, normals, values = skimage.measure.marching_cubes(
                         volume=z.reshape(
                             grid['xyz'][1].shape[0], grid['xyz'][0].shape[0],
@@ -494,8 +490,6 @@ class Mesher(object):
                     'marching_cubes error. Possibly no surface extracted from the level set.'
                 )
                 return
-            #print("verts:",verts)
-            #print("grid['xyz'][0][0]",grid['xyz'][0][0])
             # convert back to world coordinates
             vertices = verts + np.array(
                 [grid['xyz'][0][0], grid['xyz'][1][0], grid['xyz'][2][0]])
